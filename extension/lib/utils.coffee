@@ -141,17 +141,17 @@ getFocusType = (event) ->
 
 # Event helpers
 
-listen = (element, eventName, listener) ->
-  element.addEventListener(eventName, listener, USE_CAPTURE)
+listen = (element, eventName, listener, useCapture = true) ->
+  element.addEventListener(eventName, listener, useCapture)
   module.onShutdown(->
-    element.removeEventListener(eventName, listener, USE_CAPTURE)
+    element.removeEventListener(eventName, listener, useCapture)
   )
 
-listenOnce = (element, eventName, listener) ->
+listenOnce = (element, eventName, listener, useCapture = true) ->
   fn = (event) ->
     listener(event)
-    element.removeEventListener(eventName, fn, USE_CAPTURE)
-  listen(element, eventName, fn)
+    element.removeEventListener(eventName, fn, useCapture)
+  listen(element, eventName, fn, useCapture)
 
 suppressEvent = (event) ->
   event.preventDefault()

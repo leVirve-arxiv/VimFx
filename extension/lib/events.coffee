@@ -30,6 +30,7 @@ HELD_MODIFIERS_ATTRIBUTE = 'vimfx-held-modifiers'
 class UIEventManager
   constructor: (@vimfx, @window) ->
     @listen = utils.listen.bind(null, @window)
+    @listenOnce = utils.listenOnce.bind(null, @window)
 
     # This flag controls whether to suppress the various key events or not.
     @suppress = false
@@ -77,20 +78,17 @@ class UIEventManager
         vim = @vimfx.getCurrentVim(@window)
 
         if vim.isFrameEvent(event)
-          vim._listenOnce('onInput-frame', ({ @suppress }) =>
-            @setHeldModifiers(event)
+          vim._listenOnce('consumeKeyEvent', ({ focusType }) =>
+            @consumeKeyEvent(vim, event, focusType, { isFrameEvent: true })
+            return @suppress
           )
         else
-          @suppress = vim._onInput(event, utils.getFocusType(event))
-          @setHeldModifiers(event)
+          @consumeKeyEvent(vim, event, utils.getFocusType(event))
+          # This also suppresses the 'keypress' event.
           utils.suppressEvent(event) if @suppress
 
       catch error
         console.error(utils.formatError(error))
-    )
-
-    @listen('keypress', (event) =>
-      utils.suppressEvent(event) if @suppress
     )
 
     @listen('keyup', (event) =>
@@ -146,6 +144,31 @@ class UIEventManager
     module.onShutdown(=>
       @window.gBrowser.removeProgressListener(progressListener)
     )
+
+  consumeKeyEvent: (vim, event, focusType, options = {}) ->
+    match = vim._consumeKeyEvent(event, focusType)
+    switch
+      when not match
+        @suppress = null
+      when match.specialKeys['<late>']
+        @suppress = false
+        @consumeLateKeydown(vim, match, options)
+      else
+        @suppress = vim._onInput(match, options)
+    @setHeldModifiers(event)
+
+  consumeLateKeydown: (vim, match, options) ->
+    listener = (event) =>
+      if event.defaultPrevented
+        @suppress = false
+      else
+        @suppress = vim._onInput(match, options)
+        if @suppress
+          console.log 'suppressing late keydown'
+          utils.suppressEvent(event)
+          @listenOnce('keyup', utils.suppressEvent, false)
+      @setHeldModifiers(event)
+    @listenOnce('keydown', listener, false)
 
   setHeldModifiers: (event, { filterCurrentOnly = false } = {}) ->
     mainWindow = @window.document.documentElement

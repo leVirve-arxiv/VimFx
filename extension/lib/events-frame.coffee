@@ -57,6 +57,10 @@ class FrameEventManager
 
     @listen('keydown', (event) =>
       suppress = @vim.onInput(event)
+      # This also suppresses the 'keypress' and 'keyup' events. (Yes, in frame
+      # scripts, suppressing the 'keydown' events does seem to even suppress the
+      # 'keyup' event!)
+      utils.suppressEvent(event) if suppress
 
       # From this line on, the rest of the code in `addListeners` is more or
       # less devoted to autofocus prevention. When enabled, focus events that

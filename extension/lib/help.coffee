@@ -97,10 +97,25 @@ createContent = (document, vimfx) ->
       for { command, enabledSequences } in category.commands
         commandContainer = $('command', categoryContainer)
         for sequence in enabledSequences
-          $('key-sequence', commandContainer, sequence)
+          keySequence = $('key-sequence', commandContainer)
+          [specialKeys, rest] = splitSequence(sequence, vimfx.SPECIAL_KEYS)
+          $('key-sequence-special-keys', keySequence, specialKeys)
+          $('key-sequence-rest', keySequence, rest)
         $('description', commandContainer, command.description())
 
   return content
+
+splitSequence = (sequence, specialKeys) ->
+  index = 0
+  pos = 0
+  while index < specialKeys.length
+    specialKey = specialKeys[index]
+    if sequence.startsWith(specialKey, pos)
+      pos += specialKey.length
+      index = 0
+    else
+      index++
+  return [sequence[0...pos], sequence[pos..]]
 
 module.exports = {
   injectHelp

@@ -340,9 +340,9 @@ commands.focus_text_input = ({ vim, count }) ->
   vim._run('focus_text_input', {count})
 
 # Switch between text inputs or simulate `<tab>`.
-helper_move_focus = (direction, { vim, _skipMoveFocus }) ->
+helper_move_focus = (direction, { vim }) ->
   vim.markPageInteraction()
-  vim._run('move_focus', {direction, skip: _skipMoveFocus})
+  vim._run('move_focus', {direction})
 
 commands.focus_next     = helper_move_focus.bind(null, +1)
 commands.focus_previous = helper_move_focus.bind(null, -1)
